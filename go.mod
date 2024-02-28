@@ -1,4 +1,4 @@
-module github.com/bellwood4486/local-flow-proxy
+module github.com/bellwood4486/flow-limit-proxy
 
 go 1.21.6
 

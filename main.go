@@ -16,7 +16,7 @@ func init() {
 		fmt.Fprintf(flag.CommandLine.Output(), "Options:\n")
 		flag.PrintDefaults()
 	}
-	log.SetPrefix("[lfproxy] ")
+	log.SetPrefix("[flproxy] ")
 }
 
 func main() {
@@ -43,7 +43,7 @@ func main() {
 		log.Fatalf("invalid toPort: %v\n", err)
 	}
 
-	log.SetPrefix(fmt.Sprintf("[lfproxy(%d->%d)] ", from, to))
+	log.SetPrefix(fmt.Sprintf("[flproxy(%d->%d)] ", from, to))
 
 	if err := ListenProxy(uint(from), uint(to), int64(*limit)); err != nil {
 		log.Fatalf("failed to listen: %v\n", err)

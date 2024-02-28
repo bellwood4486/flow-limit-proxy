@@ -1,6 +1,6 @@
-# Local Flow Proxy
+# Flow Limit Proxy
 
-Local Flow Proxyは、ローカルホスト内のポート間のHTTP通信を制御するためのGo製コマンドラインツールです。  
+Flow Limit Proxyは、ローカルホスト内のポート間のHTTP通信を制御するためのGo製コマンドラインツールです。
 
 ## 特徴
 
@@ -12,14 +12,14 @@ Local Flow Proxyは、ローカルホスト内のポート間のHTTP通信を制
 ## インストール
 
 ```bash
-go install github.com/bellwood4486/local-flow-proxy@latest
+go install github.com/bellwood4486/flow-limit-proxy@latest
 ```
 
 ## 使い方
 
 ```
 Usages:
-  local-flow-proxy [-limit=<number>] <fromPort>:<toPort>
+  flow-limit-proxy [-limit=<number>] <fromPort>:<toPort>
 Options:
   -limit int
         concurrent transfer limit (default 10)
