@@ -17,7 +17,9 @@ go install github.com/bellwood4486/local-flow-proxy@latest
 
 ## 使い方
 
+```
 ./local-flow-proxy [-limit=<number>] <fromPort>:<toPort>
+```
 
 ## ライセンス
 
