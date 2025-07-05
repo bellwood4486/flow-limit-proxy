@@ -1,48 +1,60 @@
-# Flow Limit Proxy - Refactoring Analysis
+# Flow Limit Proxy - Technical Documentation
 
-## Project Context
-- **Project**: Flow Limit Proxy - Go-based HTTP proxy with concurrent connection limiting
-- **Current State**: 2 main files (main.go, proxy.go), 167 lines total
-- **Branch**: refactoring (created for improvements)
-- **Analysis Date**: 2025-07-05
+## Project Overview
+Flow Limit Proxy is a Go-based HTTP proxy that provides concurrent connection limiting and retry functionality.
 
-## Refactoring Plan
+## Architecture
 
-### High Priority Tasks
-1. **Add comprehensive tests** - Create `main_test.go`, `proxy_test.go`
-2. **Extract CLI logic from main()** - Separate config parsing from main.go:22-51
-3. **Improve error handling** - Use request context in proxy.go:84-88
-4. **Add input validation** - Enhance port validation in main.go:37-44
+### Current Structure
+```
+main.go (51 lines)
+├── CLI argument parsing
+├── Proxy server startup
+└── Graceful shutdown
 
-### Medium Priority Tasks
-5. **Organize into packages** - Extract proxy logic to separate package
-6. **Make configuration flexible** - Replace hardcoded values in proxy.go:111-116
-7. **Add health check endpoint** - `/health` route for monitoring
-8. **Add GoDoc comments** - Document all public functions
+proxy.go (116 lines)
+├── ListenProxy function
+├── customTransport with semaphore
+└── Exponential backoff retry logic
+```
 
-### Low Priority Tasks
-9. **Add metrics/monitoring** - Track active connections, requests
-10. **Security enhancements** - Request size limits, per-client rate limiting
+## Key Components
 
-## Key Issues Identified
+### Connection Limiting
+- Uses `golang.org/x/sync/semaphore` for concurrent connection control
+- Configurable limit via CLI parameter
+- Applied at HTTP transport level
 
-### Code Organization (main.go:22-51)
-- `main()` function handles both CLI parsing and application logic
-- Should extract into `Config` struct and separate functions
+### Retry Logic
+- Exponential backoff with `github.com/cenkalti/backoff/v4`
+- Configured for network resilience
+- Applied to failed proxy requests
 
-### Error Handling (proxy.go:84-88)
-- Context created but not used for semaphore acquisition
-- Should use `req.Context()` instead of `context.Background()`
+### Graceful Shutdown
+- Handles OS signals for clean termination
+- 10-second timeout for ongoing requests
 
-### Configuration (proxy.go:111-116)
-- Hardcoded backoff settings
-- Should make configurable via CLI flags or config file
+## Known Technical Debt
 
-### Missing Features
-- No tests (critical)
-- No health check endpoint
-- No metrics/monitoring
-- Limited error context
+### Code Organization
+- Single package structure limits reusability
+- CLI logic mixed with application logic in `main()` function
+- No separation of concerns between components
+
+### Error Handling
+- Context not properly used for semaphore acquisition (proxy.go:84-88)
+- Limited error context for debugging
+- Basic error logging without structured information
+
+### Configuration
+- Hardcoded backoff settings (proxy.go:111-116)
+- No configuration file support
+- Limited CLI parameter validation
+
+### Testing
+- No unit tests or integration tests
+- No benchmarks for performance validation
+- No test coverage reporting
 
 ## Implementation Notes
 
