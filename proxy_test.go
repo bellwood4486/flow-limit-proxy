@@ -206,7 +206,12 @@ func TestListenProxyInvalidPort(t *testing.T) {
 		p.Signal(os.Interrupt)
 	}()
 	
-	err := ListenProxy(0, 8080, 10)
+	config := &Config{
+		FromPort: 0,
+		ToPort:   8080,
+		MaxConns: 10,
+	}
+	err := ListenProxy(config)
 	// Should not return an error as port 0 is valid (binds to available port)
 	if err != nil {
 		t.Logf("ListenProxy returned error: %v", err)
@@ -276,5 +281,140 @@ func TestContextCancellation(t *testing.T) {
 	_, err = transport.RoundTrip(req)
 	if err == nil {
 		t.Error("Expected error due to context cancellation")
+	}
+}
+
+func TestValidatePort(t *testing.T) {
+	tests := []struct {
+		name    string
+		port    int
+		wantErr bool
+	}{
+		{
+			name:    "valid port 1",
+			port:    1,
+			wantErr: false,
+		},
+		{
+			name:    "valid port 80",
+			port:    80,
+			wantErr: false,
+		},
+		{
+			name:    "valid port 8080",
+			port:    8080,
+			wantErr: false,
+		},
+		{
+			name:    "valid port 65535",
+			port:    65535,
+			wantErr: false,
+		},
+		{
+			name:    "invalid port 0",
+			port:    0,
+			wantErr: true,
+		},
+		{
+			name:    "invalid port -1",
+			port:    -1,
+			wantErr: true,
+		},
+		{
+			name:    "invalid port 65536",
+			port:    65536,
+			wantErr: true,
+		},
+		{
+			name:    "invalid port 100000",
+			port:    100000,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validatePort(tt.port)
+			
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Expected error for port %d, but got none", tt.port)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error for port %d: %v", tt.port, err)
+				}
+			}
+		})
+	}
+}
+
+func TestNewConfig(t *testing.T) {
+	tests := []struct {
+		name     string
+		fromPort int
+		toPort   int
+		limit    int64
+		want     *Config
+		wantErr  bool
+	}{
+		{
+			name:     "valid config",
+			fromPort: 8080,
+			toPort:   9090,
+			limit:    10,
+			want: &Config{
+				FromPort: 8080,
+				ToPort:   9090,
+				MaxConns: 10,
+			},
+			wantErr: false,
+		},
+		{
+			name:     "invalid fromPort",
+			fromPort: 0,
+			toPort:   8080,
+			limit:    10,
+			wantErr:  true,
+		},
+		{
+			name:     "invalid toPort",
+			fromPort: 8080,
+			toPort:   65536,
+			limit:    10,
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NewConfig(tt.fromPort, tt.toPort, tt.limit)
+			
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Expected error for NewConfig(%d, %d, %d), but got none", 
+						tt.fromPort, tt.toPort, tt.limit)
+				}
+				return
+			}
+			
+			if err != nil {
+				t.Errorf("Unexpected error for NewConfig(%d, %d, %d): %v", 
+					tt.fromPort, tt.toPort, tt.limit, err)
+				return
+			}
+			
+			if got.FromPort != tt.want.FromPort {
+				t.Errorf("Expected FromPort %d, got %d", tt.want.FromPort, got.FromPort)
+			}
+			
+			if got.ToPort != tt.want.ToPort {
+				t.Errorf("Expected ToPort %d, got %d", tt.want.ToPort, got.ToPort)
+			}
+			
+			if got.MaxConns != tt.want.MaxConns {
+				t.Errorf("Expected MaxConns %d, got %d", tt.want.MaxConns, got.MaxConns)
+			}
+		})
 	}
 }

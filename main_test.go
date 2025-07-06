@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"os"
 	"testing"
 )
 
@@ -73,67 +75,82 @@ func TestPortParsing(t *testing.T) {
 	}
 }
 
-func TestValidatePort(t *testing.T) {
+func TestParseArgs(t *testing.T) {
 	tests := []struct {
-		name    string
-		port    int
-		wantErr bool
+		name     string
+		args     []string
+		want     *Config
+		wantErr  bool
 	}{
 		{
-			name:    "valid port 1",
-			port:    1,
+			name: "valid config",
+			args: []string{"cmd", "8080:9090"},
+			want: &Config{
+				FromPort: 8080,
+				ToPort:   9090,
+				MaxConns: 10,
+			},
 			wantErr: false,
 		},
 		{
-			name:    "valid port 80",
-			port:    80,
+			name: "valid config with limit",
+			args: []string{"cmd", "-limit=5", "8080:9090"},
+			want: &Config{
+				FromPort: 8080,
+				ToPort:   9090,
+				MaxConns: 5,
+			},
 			wantErr: false,
 		},
 		{
-			name:    "valid port 8080",
-			port:    8080,
-			wantErr: false,
-		},
-		{
-			name:    "valid port 65535",
-			port:    65535,
-			wantErr: false,
-		},
-		{
-			name:    "invalid port 0",
-			port:    0,
+			name:    "invalid port format",
+			args:    []string{"cmd", "8080"},
 			wantErr: true,
 		},
 		{
-			name:    "invalid port -1",
-			port:    -1,
-			wantErr: true,
-		},
-		{
-			name:    "invalid port 65536",
-			port:    65536,
-			wantErr: true,
-		},
-		{
-			name:    "invalid port 100000",
-			port:    100000,
+			name:    "invalid port range",
+			args:    []string{"cmd", "0:8080"},
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validatePort(tt.port)
+			// Reset flags for each test
+			flag.CommandLine = flag.NewFlagSet(tt.args[0], flag.ContinueOnError)
+			
+			// Set os.Args for this test
+			oldArgs := os.Args
+			os.Args = tt.args
+			defer func() { os.Args = oldArgs }()
+			
+			got, err := parseArgs()
 			
 			if tt.wantErr {
 				if err == nil {
-					t.Errorf("Expected error for port %d, but got none", tt.port)
+					t.Errorf("Expected error for args %v, but got none", tt.args)
 				}
-			} else {
-				if err != nil {
-					t.Errorf("Unexpected error for port %d: %v", tt.port, err)
-				}
+				return
+			}
+			
+			if err != nil {
+				t.Errorf("Unexpected error for args %v: %v", tt.args, err)
+				return
+			}
+			
+			if got.FromPort != tt.want.FromPort {
+				t.Errorf("Expected FromPort %d, got %d", tt.want.FromPort, got.FromPort)
+			}
+			
+			if got.ToPort != tt.want.ToPort {
+				t.Errorf("Expected ToPort %d, got %d", tt.want.ToPort, got.ToPort)
+			}
+			
+			if got.MaxConns != tt.want.MaxConns {
+				t.Errorf("Expected MaxConns %d, got %d", tt.want.MaxConns, got.MaxConns)
 			}
 		})
 	}
 }
+
+
