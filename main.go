@@ -11,8 +11,8 @@ import (
 
 // Config holds the application configuration
 type Config struct {
-	FromPort int
-	ToPort   int
+	FromPort uint
+	ToPort   uint
 	Limit    int64
 }
 
@@ -34,7 +34,7 @@ func main() {
 
 	log.SetPrefix(fmt.Sprintf("[flproxy(%d->%d)] ", config.FromPort, config.ToPort))
 
-	if err := ListenProxy(uint(config.FromPort), uint(config.ToPort), config.Limit); err != nil {
+	if err := ListenProxy(config.FromPort, config.ToPort, config.Limit); err != nil {
 		log.Fatalf("failed to listen: %v\n", err)
 	}
 }
@@ -63,8 +63,8 @@ func parseArgs() (*Config, error) {
 	}
 
 	return &Config{
-		FromPort: from,
-		ToPort:   to,
+		FromPort: uint(from),
+		ToPort:   uint(to),
 		Limit:    *limit,
 	}, nil
 }
