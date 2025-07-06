@@ -16,6 +16,23 @@ type Config struct {
 	Limit    int64
 }
 
+// NewConfig creates a new Config with validation
+func NewConfig(fromPort, toPort int, limit int64) (*Config, error) {
+	if err := validatePort(fromPort); err != nil {
+		return nil, fmt.Errorf("invalid fromPort: %w", err)
+	}
+	
+	if err := validatePort(toPort); err != nil {
+		return nil, fmt.Errorf("invalid toPort: %w", err)
+	}
+	
+	return &Config{
+		FromPort: uint(fromPort),
+		ToPort:   uint(toPort),
+		Limit:    limit,
+	}, nil
+}
+
 func init() {
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(), "Usages:\n")
@@ -54,19 +71,7 @@ func parseArgs() (*Config, error) {
 		return nil, fmt.Errorf("invalid port format: %w", err)
 	}
 
-	if err := validatePort(from); err != nil {
-		return nil, fmt.Errorf("invalid fromPort: %w", err)
-	}
-
-	if err := validatePort(to); err != nil {
-		return nil, fmt.Errorf("invalid toPort: %w", err)
-	}
-
-	return &Config{
-		FromPort: uint(from),
-		ToPort:   uint(to),
-		Limit:    *limit,
-	}, nil
+	return NewConfig(from, to, *limit)
 }
 
 // parsePortString parses a port string in format "from:to" and returns the port numbers

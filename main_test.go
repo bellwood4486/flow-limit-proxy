@@ -217,3 +217,99 @@ func TestParseArgs(t *testing.T) {
 		})
 	}
 }
+
+func TestNewConfig(t *testing.T) {
+	tests := []struct {
+		name     string
+		fromPort int
+		toPort   int
+		limit    int64
+		want     *Config
+		wantErr  bool
+	}{
+		{
+			name:     "valid config",
+			fromPort: 8080,
+			toPort:   9090,
+			limit:    10,
+			want: &Config{
+				FromPort: 8080,
+				ToPort:   9090,
+				Limit:    10,
+			},
+			wantErr: false,
+		},
+		{
+			name:     "valid edge case ports",
+			fromPort: 1,
+			toPort:   65535,
+			limit:    100,
+			want: &Config{
+				FromPort: 1,
+				ToPort:   65535,
+				Limit:    100,
+			},
+			wantErr: false,
+		},
+		{
+			name:     "invalid fromPort - too low",
+			fromPort: 0,
+			toPort:   8080,
+			limit:    10,
+			wantErr:  true,
+		},
+		{
+			name:     "invalid fromPort - too high",
+			fromPort: 65536,
+			toPort:   8080,
+			limit:    10,
+			wantErr:  true,
+		},
+		{
+			name:     "invalid toPort - negative",
+			fromPort: 8080,
+			toPort:   -1,
+			limit:    10,
+			wantErr:  true,
+		},
+		{
+			name:     "invalid toPort - too high",
+			fromPort: 8080,
+			toPort:   100000,
+			limit:    10,
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NewConfig(tt.fromPort, tt.toPort, tt.limit)
+			
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Expected error for NewConfig(%d, %d, %d), but got none", 
+						tt.fromPort, tt.toPort, tt.limit)
+				}
+				return
+			}
+			
+			if err != nil {
+				t.Errorf("Unexpected error for NewConfig(%d, %d, %d): %v", 
+					tt.fromPort, tt.toPort, tt.limit, err)
+				return
+			}
+			
+			if got.FromPort != tt.want.FromPort {
+				t.Errorf("Expected FromPort %d, got %d", tt.want.FromPort, got.FromPort)
+			}
+			
+			if got.ToPort != tt.want.ToPort {
+				t.Errorf("Expected ToPort %d, got %d", tt.want.ToPort, got.ToPort)
+			}
+			
+			if got.Limit != tt.want.Limit {
+				t.Errorf("Expected Limit %d, got %d", tt.want.Limit, got.Limit)
+			}
+		})
+	}
+}
