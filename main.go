@@ -9,29 +9,6 @@ import (
 	"strings"
 )
 
-// Config holds the application configuration
-type Config struct {
-	FromPort uint  // Source port to listen on (1-65535)
-	ToPort   uint  // Target port to forward requests to (1-65535)
-	Limit    int64 // Maximum number of concurrent connections
-}
-
-// NewConfig creates a new Config with validation
-func NewConfig(fromPort, toPort int, limit int64) (*Config, error) {
-	if err := validatePort(fromPort); err != nil {
-		return nil, fmt.Errorf("invalid fromPort: %w", err)
-	}
-	
-	if err := validatePort(toPort); err != nil {
-		return nil, fmt.Errorf("invalid toPort: %w", err)
-	}
-	
-	return &Config{
-		FromPort: uint(fromPort),
-		ToPort:   uint(toPort),
-		Limit:    limit,
-	}, nil
-}
 
 func init() {
 	flag.Usage = func() {
@@ -51,7 +28,7 @@ func main() {
 
 	log.SetPrefix(fmt.Sprintf("[flproxy(%d->%d)] ", config.FromPort, config.ToPort))
 
-	if err := ListenProxy(config.FromPort, config.ToPort, config.Limit); err != nil {
+	if err := ListenProxy(config); err != nil {
 		log.Fatalf("failed to listen: %v\n", err)
 	}
 }
@@ -92,12 +69,4 @@ func parsePortString(portStr string) (int, int, error) {
 	}
 	
 	return from, to, nil
-}
-
-// validatePort validates that a port number is within the valid range
-func validatePort(port int) error {
-	if port < 1 || port > 65535 {
-		return fmt.Errorf("port must be between 1 and 65535, got %d", port)
-	}
-	return nil
 }

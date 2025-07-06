@@ -17,13 +17,45 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-func ListenProxy(portFrom, portTo uint, concurrentLimit int64) error {
-	proxy, err := newReverseProxy(portTo, concurrentLimit)
+// Config holds the proxy configuration
+type Config struct {
+	FromPort   uint  // Source port to listen on (1-65535)
+	ToPort     uint  // Target port to forward requests to (1-65535)
+	MaxConns   int64 // Maximum number of concurrent connections
+}
+
+// NewConfig creates a new Config with validation
+func NewConfig(fromPort, toPort int, limit int64) (*Config, error) {
+	if err := validatePort(fromPort); err != nil {
+		return nil, fmt.Errorf("invalid fromPort: %w", err)
+	}
+	
+	if err := validatePort(toPort); err != nil {
+		return nil, fmt.Errorf("invalid toPort: %w", err)
+	}
+	
+	return &Config{
+		FromPort: uint(fromPort),
+		ToPort:   uint(toPort),
+		MaxConns: limit,
+	}, nil
+}
+
+// validatePort validates that a port number is within the valid range
+func validatePort(port int) error {
+	if port < 1 || port > 65535 {
+		return fmt.Errorf("port must be between 1 and 65535, got %d", port)
+	}
+	return nil
+}
+
+func ListenProxy(config *Config) error {
+	proxy, err := newReverseProxy(config.ToPort, config.MaxConns)
 	if err != nil {
 		return fmt.Errorf("failed to new proxy: %w", err)
 	}
 	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", portFrom),
+		Addr:    fmt.Sprintf(":%d", config.FromPort),
 		Handler: proxy,
 	}
 
@@ -40,7 +72,7 @@ func ListenProxy(portFrom, portTo uint, concurrentLimit int64) error {
 		}
 	}()
 
-	log.Printf("start proxy...(limit:%d)", concurrentLimit)
+	log.Printf("start proxy...(limit:%d)", config.MaxConns)
 	if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		return fmt.Errorf("failed to ListenAndServ: %w", err)
 	}
