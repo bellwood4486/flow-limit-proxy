@@ -11,9 +11,9 @@ import (
 
 // Config holds the application configuration
 type Config struct {
-	FromPort uint
-	ToPort   uint
-	Limit    int64
+	FromPort uint  // Source port to listen on (1-65535)
+	ToPort   uint  // Target port to forward requests to (1-65535)
+	Limit    int64 // Maximum number of concurrent connections
 }
 
 // NewConfig creates a new Config with validation
