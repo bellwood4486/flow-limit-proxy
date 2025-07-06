@@ -8,20 +8,20 @@
 ## Refactoring Opportunities
 
 ### High Priority Tasks
-1. **Add comprehensive tests** - Create `main_test.go`, `proxy_test.go`
-2. **Extract CLI logic from main()** - Separate config parsing from main.go:22-51
-3. **Improve error handling** - Use request context in proxy.go:84-88
-4. **Add input validation** - Enhance port validation in main.go:37-44
+- [x] **Add comprehensive tests** - Create `main_test.go`, `proxy_test.go`
+- [ ] **Extract CLI logic from main()** - Separate config parsing from main.go:22-51
+- [ ] **Improve error handling** - Use request context in proxy.go:84-88
+- [x] **Add input validation** - Enhance port validation in main.go:37-44
 
 ### Medium Priority Tasks
-5. **Organize into packages** - Extract proxy logic to separate package
-6. **Make configuration flexible** - Replace hardcoded values in proxy.go:111-116
-7. **Add health check endpoint** - `/health` route for monitoring
-8. **Add GoDoc comments** - Document all public functions
+- [ ] **Organize into packages** - Extract proxy logic to separate package
+- [ ] **Make configuration flexible** - Replace hardcoded values in proxy.go:111-116
+- [ ] **Add health check endpoint** - `/health` route for monitoring
+- [ ] **Add GoDoc comments** - Document all public functions
 
 ### Low Priority Tasks
-9. **Add metrics/monitoring** - Track active connections, requests
-10. **Security enhancements** - Request size limits, per-client rate limiting
+- [ ] **Add metrics/monitoring** - Track active connections, requests
+- [ ] **Security enhancements** - Request size limits, per-client rate limiting
 
 ## Key Issues Identified
 
