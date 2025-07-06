@@ -113,8 +113,7 @@ func newCustomTransport(concurrentLimit int64) http.RoundTripper {
 
 func (t *customTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	// 同時通信数の制御
-	ctx := context.Background()
-	if err := t.sem.Acquire(ctx, 1); err != nil {
+	if err := t.sem.Acquire(req.Context(), 1); err != nil {
 		return nil, fmt.Errorf("failed to acquire semaphore: %v", err)
 	}
 	defer t.sem.Release(1)

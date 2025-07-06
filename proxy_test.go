@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -417,4 +419,65 @@ func TestNewConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSemaphoreContextCancellation(t *testing.T) {
+	// Create a transport with limit of 1
+	transport := newCustomTransport(1)
+	
+	// Create a server that responds quickly
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+	
+	
+	// Start first request in a goroutine and hold it
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		// This will acquire the semaphore and hold it
+		customT := transport.(*customTransport)
+		err := customT.sem.Acquire(context.Background(), 1)
+		if err != nil {
+			t.Errorf("Failed to acquire semaphore: %v", err)
+			return
+		}
+		time.Sleep(200 * time.Millisecond) // Hold the semaphore
+		customT.sem.Release(1)
+	}()
+	
+	// Wait a bit to ensure the semaphore is occupied
+	time.Sleep(50 * time.Millisecond)
+	
+	// Create second request with a short timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+	
+	req2, err := http.NewRequestWithContext(ctx, "GET", server.URL, nil)
+	if err != nil {
+		t.Fatalf("Failed to create second request: %v", err)
+	}
+	
+	// This should fail due to context timeout while waiting for semaphore
+	start := time.Now()
+	_, err = transport.RoundTrip(req2)
+	elapsed := time.Since(start)
+	
+	if err == nil {
+		t.Error("Expected error due to context cancellation during semaphore acquisition")
+	}
+	
+	// Check that the error is context-related
+	if err != nil && !errors.Is(err, context.DeadlineExceeded) && !strings.Contains(err.Error(), "context") {
+		t.Errorf("Expected context-related error, got: %v", err)
+	}
+	
+	// Should timeout around 100ms, not wait for the full 200ms
+	if elapsed > 150*time.Millisecond {
+		t.Errorf("Request took too long (%v), context cancellation may not be working properly", elapsed)
+	}
+	
+	// Wait for the first goroutine to complete
+	<-done
 }
