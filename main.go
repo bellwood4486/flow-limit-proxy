@@ -9,6 +9,13 @@ import (
 	"strings"
 )
 
+// Config holds the application configuration
+type Config struct {
+	FromPort int
+	ToPort   int
+	Limit    int64
+}
+
 func init() {
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(), "Usages:\n")
@@ -20,31 +27,46 @@ func init() {
 }
 
 func main() {
-	// limit
+	config, err := parseArgs()
+	if err != nil {
+		log.Fatalf("configuration error: %v\n", err)
+	}
+
+	log.SetPrefix(fmt.Sprintf("[flproxy(%d->%d)] ", config.FromPort, config.ToPort))
+
+	if err := ListenProxy(uint(config.FromPort), uint(config.ToPort), config.Limit); err != nil {
+		log.Fatalf("failed to listen: %v\n", err)
+	}
+}
+
+// parseArgs parses command line arguments and returns configuration
+func parseArgs() (*Config, error) {
 	limit := flag.Int64("limit", 10, "concurrent transfer limit")
 	flag.Parse()
 
-	// port
 	if len(flag.Args()) != 1 {
 		flag.Usage()
 		os.Exit(1)
 	}
+
 	from, to, err := parsePortString(flag.Arg(0))
 	if err != nil {
-		log.Fatalf("invalid port format: %v\n", err)
+		return nil, fmt.Errorf("invalid port format: %w", err)
 	}
+
 	if err := validatePort(from); err != nil {
-		log.Fatalf("invalid fromPort: %v\n", err)
+		return nil, fmt.Errorf("invalid fromPort: %w", err)
 	}
+
 	if err := validatePort(to); err != nil {
-		log.Fatalf("invalid toPort: %v\n", err)
+		return nil, fmt.Errorf("invalid toPort: %w", err)
 	}
 
-	log.SetPrefix(fmt.Sprintf("[flproxy(%d->%d)] ", from, to))
-
-	if err := ListenProxy(uint(from), uint(to), int64(*limit)); err != nil {
-		log.Fatalf("failed to listen: %v\n", err)
-	}
+	return &Config{
+		FromPort: from,
+		ToPort:   to,
+		Limit:    *limit,
+	}, nil
 }
 
 // parsePortString parses a port string in format "from:to" and returns the port numbers

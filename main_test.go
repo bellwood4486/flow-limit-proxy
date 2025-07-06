@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"os"
 	"testing"
 )
 
@@ -133,6 +135,84 @@ func TestValidatePort(t *testing.T) {
 				if err != nil {
 					t.Errorf("Unexpected error for port %d: %v", tt.port, err)
 				}
+			}
+		})
+	}
+}
+
+func TestParseArgs(t *testing.T) {
+	tests := []struct {
+		name     string
+		args     []string
+		want     *Config
+		wantErr  bool
+	}{
+		{
+			name: "valid config",
+			args: []string{"cmd", "8080:9090"},
+			want: &Config{
+				FromPort: 8080,
+				ToPort:   9090,
+				Limit:    10,
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid config with limit",
+			args: []string{"cmd", "-limit=5", "8080:9090"},
+			want: &Config{
+				FromPort: 8080,
+				ToPort:   9090,
+				Limit:    5,
+			},
+			wantErr: false,
+		},
+		{
+			name:    "invalid port format",
+			args:    []string{"cmd", "8080"},
+			wantErr: true,
+		},
+		{
+			name:    "invalid port range",
+			args:    []string{"cmd", "0:8080"},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Reset flags for each test
+			flag.CommandLine = flag.NewFlagSet(tt.args[0], flag.ContinueOnError)
+			
+			// Set os.Args for this test
+			oldArgs := os.Args
+			os.Args = tt.args
+			defer func() { os.Args = oldArgs }()
+			
+			got, err := parseArgs()
+			
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Expected error for args %v, but got none", tt.args)
+				}
+				return
+			}
+			
+			if err != nil {
+				t.Errorf("Unexpected error for args %v: %v", tt.args, err)
+				return
+			}
+			
+			if got.FromPort != tt.want.FromPort {
+				t.Errorf("Expected FromPort %d, got %d", tt.want.FromPort, got.FromPort)
+			}
+			
+			if got.ToPort != tt.want.ToPort {
+				t.Errorf("Expected ToPort %d, got %d", tt.want.ToPort, got.ToPort)
+			}
+			
+			if got.Limit != tt.want.Limit {
+				t.Errorf("Expected Limit %d, got %d", tt.want.Limit, got.Limit)
 			}
 		})
 	}
